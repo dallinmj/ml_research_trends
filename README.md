@@ -1,9 +1,9 @@
-# ML Research Trends
+# Machine Learning Research Trends
 
-A small Python package + Streamlit app I built to look at how different
+A small Python package + Streamlit app we built to look at how different
 sub-areas of machine learning research have grown over time. For each topic
 (like transformers, RAG, chain-of-thought reasoning, and vision-language
-models) I pull papers from the Semantic Scholar API, embed their abstracts
+models) we pull papers from the Semantic Scholar API, embed their abstracts
 with Qwen3-Embedding-4B, and make some plots.
 
 ## What's in here
