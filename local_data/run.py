@@ -22,15 +22,15 @@ from ml_research_trends import (
 # Past runs (uncomment a block to rerun):
 
 # --- RAG ------------------------------------------------------------
-# TOPIC = "RAG"
-# SLUG = "rag"
-# KEYWORDS = [
-#     "retrieval augmented generation",
-#     "retrieval-augmented generation",
-#     "RAG",
-# ]
-# LANDMARK_DATE = "2020-05-22"
-# LANDMARK_LABEL = "Lewis et al. — RAG"
+TOPIC = "RAG"
+SLUG = "rag"
+KEYWORDS = [
+    "retrieval augmented generation",
+    "retrieval-augmented generation",
+    "RAG",
+]
+LANDMARK_DATE = "2020-05-22"
+LANDMARK_LABEL = "Lewis et al. — RAG"
 # --------------------------------------------------------------------
 
 # --- Reasoning / Chain-of-Thought -------------------------------------
@@ -66,23 +66,23 @@ from ml_research_trends import (
 # "Attention Is All You Need" (Vaswani et al., 2017) predates our 2019+
 # collection window, but it's the foundational architecture anchor that
 # virtually all later work in this repo builds on.
-TOPIC = "Transformer Architecture"
-SLUG = "transformer"
-KEYWORDS = [
-    "self-attention neural network",
-    "multi-head attention",
-    "transformer language model",
-    "encoder decoder transformer",
-]
-LANDMARK_DATE = "2017-06-12"  # Vaswani et al., Attention Is All You Need (arXiv v1)
-LANDMARK_LABEL = "Vaswani et al. — Attention Is All You Need"
+# TOPIC = "Transformer Architecture"
+# SLUG = "transformer"
+# KEYWORDS = [
+#     "self-attention neural network",
+#     "multi-head attention",
+#     "transformer language model",
+#     "encoder decoder transformer",
+# ]
+# LANDMARK_DATE = "2017-06-12"  # Vaswani et al., Attention Is All You Need (arXiv v1)
+# LANDMARK_LABEL = "Vaswani et al. — Attention Is All You Need"
 # ----------------------------------------------------------------------
 
 
 def main():
     df = collect_topic_data(
         keywords=KEYWORDS,
-        max_results_per_keyword=500,
+        max_results_per_keyword=700,
         min_year=2016,
         max_year=2026,
         save_path=f"{SLUG}_papers.csv",
