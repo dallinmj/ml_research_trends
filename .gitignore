@@ -1,1 +1,16 @@
+# Env / secrets
 .env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual envs
+.venv/
+venv/
+
+# OS / editor junk
+.DS_Store
+.ipynb_checkpoints/

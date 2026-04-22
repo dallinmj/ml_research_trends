@@ -1,8 +1,4 @@
-"""Visualization and embedding utilities.
-
-Plots topic trends and projects paper abstracts into 2-D with a
-sentence-transformer-compatible embedding model.
-"""
+"""Plots and embedding utilities for the research papers data."""
 
 import os
 
@@ -13,9 +9,7 @@ import matplotlib.pyplot as plt
 
 
 def _resolve_device(device=None):
-    """Resolve a torch device string. If ``device`` is None, auto-pick:
-    first available CUDA GPU, else MPS, else CPU.
-    """
+    """Pick a torch device. Uses CUDA if available, then MPS, then CPU."""
     if device is not None:
         return device
 
@@ -38,12 +32,11 @@ def plot_topic_counts_by_year(
     show=True,
     save_path=None,
 ):
-    """Bar chart of paper counts per year from ``analyze_topic_trends``."""
+    """Bar chart of papers per year."""
     sns.set_theme(style="whitegrid")
 
     fig = plt.figure(figsize=figsize)
     sns.barplot(data=trend_df, x="year", y="paper_count")
-
     plt.xlabel("Year")
     plt.ylabel("Number of Papers")
     plt.title(f"{topic_name} Papers by Year")
@@ -76,40 +69,16 @@ def embed_and_plot_abstracts(
     save_path=None,
     html_path=None,
 ):
-    """Embed paper abstracts with a sentence-transformer-compatible model
-    and plot a 2-D projection colored by publication year.
-
-    Parameters
-    ----------
-    df : DataFrame returned by ``collect_topic_data``.
-    model_name_or_path : HuggingFace model id OR local path to a model.
-    device : torch device string (e.g. "cuda", "cuda:0", "cuda:7", "cpu",
-        "mps"), OR a list of device strings (e.g.
-        ["cuda:4", "cuda:5", "cuda:6", "cuda:7"]) to shard encoding across
-        multiple GPUs via sentence-transformers' multi-process pool. If
-        None, auto-detects the best single device.
-    reducer : "umap", "tsne", or "pca".
-    batch_size : batch size used when encoding abstracts.
-    max_papers : optional cap on number of abstracts (for quick iteration).
-    cache_path : optional .npy path to cache embeddings keyed to the df order.
-    normalize_embeddings : L2-normalize embeddings during encoding.
-    trust_remote_code : pass-through to SentenceTransformer for models that
-        require it (e.g. some custom architectures).
-    umap_kwargs, tsne_kwargs, pca_kwargs : dicts to override the respective
-        reducer's default arguments.
-    figsize, show, save_path : static-plot controls (matplotlib PNG).
-    html_path : optional path to also write an interactive Plotly HTML
-        scatter with hover tooltips (title / authors / year / venue /
-        citations / url). Requires ``plotly`` to be installed.
-    """
+    """Embed paper abstracts and plot them in 2-D colored by year."""
+    # Only keep papers that actually have an abstract.
     work = df.copy()
     work = work[work["abstract"].astype(str).str.len() > 0].reset_index(drop=True)
     if max_papers is not None:
         work = work.head(max_papers).reset_index(drop=True)
-
     if work.empty:
         raise ValueError("No abstracts available to embed.")
 
+    # Try to load cached embeddings first to avoid re-running the model.
     embeddings = None
     if cache_path and os.path.exists(cache_path):
         cached = np.load(cache_path)
@@ -120,21 +89,12 @@ def embed_and_plot_abstracts(
     if embeddings is None:
         from sentence_transformers import SentenceTransformer
 
-        # ``device`` may be a single device string (e.g. "cuda:7") or a list
-        # of device strings (e.g. ["cuda:4", "cuda:5", "cuda:6", "cuda:7"]).
-        # When a list is passed we spin up a multi-process pool so the
-        # abstracts are sharded across multiple GPUs.
+        # If `device` is a list of GPUs we'll shard encoding across them.
         multi_device = isinstance(device, (list, tuple))
-
         if multi_device:
             target_devices = list(device)
-            # Load the model on the first device; each worker process will
-            # move its own copy onto the appropriate target device.
             load_device = target_devices[0]
-            print(
-                f"Loading {model_name_or_path} on {load_device} "
-                f"(multi-GPU pool: {target_devices})..."
-            )
+            print(f"Loading {model_name_or_path} on {load_device} (multi-GPU: {target_devices})...")
         else:
             load_device = _resolve_device(device)
             print(f"Loading {model_name_or_path} on {load_device}...")
@@ -144,7 +104,6 @@ def embed_and_plot_abstracts(
             device=load_device,
             trust_remote_code=trust_remote_code,
         )
-
         abstracts = work["abstract"].tolist()
 
         if multi_device:
@@ -171,22 +130,15 @@ def embed_and_plot_abstracts(
             np.save(cache_path, embeddings)
             print(f"Saved embeddings to {cache_path}")
 
+    # Reduce to 2-D so we can plot it.
     reducer = reducer.lower()
     if reducer == "umap":
         import umap
-
-        defaults = dict(
-            n_neighbors=15,
-            min_dist=0.1,
-            n_components=2,
-            metric="cosine",
-            random_state=random_state,
-        )
+        defaults = dict(n_neighbors=15, min_dist=0.1, n_components=2, metric="cosine", random_state=random_state)
         defaults.update(umap_kwargs or {})
         coords = umap.UMAP(**defaults).fit_transform(embeddings)
     elif reducer == "tsne":
         from sklearn.manifold import TSNE
-
         defaults = dict(
             n_components=2,
             metric="cosine",
@@ -198,7 +150,6 @@ def embed_and_plot_abstracts(
         coords = TSNE(**defaults).fit_transform(embeddings)
     elif reducer == "pca":
         from sklearn.decomposition import PCA
-
         defaults = dict(n_components=2, random_state=random_state)
         defaults.update(pca_kwargs or {})
         coords = PCA(**defaults).fit_transform(embeddings)
@@ -208,6 +159,7 @@ def embed_and_plot_abstracts(
     work["x"] = coords[:, 0]
     work["y"] = coords[:, 1]
 
+    # Static matplotlib scatter.
     sns.set_theme(style="whitegrid")
     plt.figure(figsize=figsize)
     scatter = sns.scatterplot(
@@ -232,8 +184,10 @@ def embed_and_plot_abstracts(
     if show:
         plt.show()
 
+    # Optional interactive Plotly version with hover tooltips.
     if html_path:
         import plotly.express as px
+        import textwrap
 
         hover_df = work.copy()
         for col in ("title", "authors", "venue", "url"):
@@ -242,23 +196,10 @@ def embed_and_plot_abstracts(
         if "citation_count" not in hover_df.columns:
             hover_df["citation_count"] = 0
 
-        # Wrap long titles so the hover tooltip doesn't blow out horizontally.
-        def _wrap(text, width=80):
-            import textwrap
-            return "<br>".join(textwrap.wrap(text, width=width)) or text
-
-        hover_df["title_wrapped"] = hover_df["title"].map(_wrap)
-
-        hover_data = {
-            "title_wrapped": True,
-            "authors": True,
-            "year": True,
-            "venue": True,
-            "citation_count": True,
-            "url": True,
-            "x": False,
-            "y": False,
-        }
+        # Wrap long titles so the hover box doesn't get super wide.
+        hover_df["title_wrapped"] = hover_df["title"].map(
+            lambda t: "<br>".join(textwrap.wrap(t, width=80)) or t
+        )
 
         fig_plotly = px.scatter(
             hover_df,
@@ -266,21 +207,25 @@ def embed_and_plot_abstracts(
             y="y",
             color="year",
             color_continuous_scale="Viridis",
-            hover_data=hover_data,
+            hover_data={
+                "title_wrapped": True,
+                "authors": True,
+                "year": True,
+                "venue": True,
+                "citation_count": True,
+                "url": True,
+                "x": False,
+                "y": False,
+            },
             labels={
                 "x": f"{reducer.upper()}-1",
                 "y": f"{reducer.upper()}-2",
                 "title_wrapped": "Title",
                 "citation_count": "Citations",
             },
-            title=(
-                f"{topic_name} abstract embeddings ({reducer.upper()}) "
-                f"colored by year — hover for paper details"
-            ),
+            title=f"{topic_name} abstract embeddings ({reducer.upper()}) — hover for paper details",
         )
-        fig_plotly.update_traces(
-            marker=dict(size=7, opacity=0.8, line=dict(width=0)),
-        )
+        fig_plotly.update_traces(marker=dict(size=7, opacity=0.8, line=dict(width=0)))
         fig_plotly.update_layout(
             template="plotly_white",
             hoverlabel=dict(bgcolor="white", font_size=12),
@@ -300,24 +245,16 @@ def plot_landmark_timeline(
     show=True,
     save_path=None,
 ):
-    """Plot per-year paper counts as points connected by a line, with a
-    vertical marker at a landmark paper's publication date.
-
-    Parameters
-    ----------
-    df : DataFrame returned by ``collect_topic_data``. Uses the ``year`` column.
-    landmark_date : str or Timestamp, e.g. "2020-05-28" for GPT-3.
-    cumulative : if True, plot cumulative paper count instead of per-year.
-    """
+    """Line plot of papers per year with a vertical marker on a landmark date."""
     work = df.copy()
     work["year"] = pd.to_numeric(work["year"], errors="coerce").astype("Int64")
     work = work.dropna(subset=["year"])
-
     if work.empty:
         raise ValueError("No dated papers available.")
 
     landmark = pd.to_datetime(landmark_date)
 
+    # Count papers per year, filling in missing years with 0.
     counts = work.groupby("year").size().sort_index()
     full_years = pd.Index(range(int(counts.index.min()), int(counts.index.max()) + 1), name="year")
     counts = counts.reindex(full_years, fill_value=0)
@@ -346,6 +283,7 @@ def plot_landmark_timeline(
         markeredgewidth=1.2,
     )
 
+    # Vertical dashed line + label for the landmark paper.
     ax.axvline(landmark.year, color="crimson", linestyle="--", linewidth=2)
     ax.annotate(
         f"{landmark_label}\n{landmark.date()}",
