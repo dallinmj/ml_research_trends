@@ -14,7 +14,7 @@ package + Streamlit app to explore the results.
 - [Tutorial](tutorial.md) — how to install the package and use it end-to-end
 - [Documentation](documentation.md) — reference for each function in the package
 - [Technical Report](report.md) — motivating question, methodology, and findings
-- [Streamlit App](https://ml-research-trends.streamlit.app/) — interactive dashboard
+- [Streamlit App](https://ml-trends.streamlit.app/) — interactive dashboard
 - [GitHub Repository](https://github.com/dallinmj/ml_research_trends) — source code and data
 
 ## Topics included
