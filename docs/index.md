@@ -1,11 +1,11 @@
 ---
-title: ML Research Trends
+title: Machine Learning Research Trends
 ---
 
-# ML Research Trends
+# Machine Learning Research Trends
 
-A class project that looks at how a few different areas of machine learning
-research have grown over time. I pulled papers from the Semantic Scholar API,
+A project that looks at how a few different areas of machine learning
+research have grown over time. We pulled papers from the Semantic Scholar API,
 embedded their abstracts with Qwen3-Embedding-4B, and made a small Python
 package + Streamlit app to explore the results.
 
@@ -23,6 +23,3 @@ package + Streamlit app to explore the results.
 - Retrieval-Augmented Generation (RAG)
 - Reasoning / Chain-of-Thought
 - Multimodal / Vision-Language Models
-
-For each topic the repo includes a CSV of papers, cached embeddings, and a
-few plots under `local_data/<topic>/`.
